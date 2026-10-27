@@ -1,0 +1,30 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: rh
+      POSTGRES_PASSWORD: rh_local
+      POSTGRES_DB: rh
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - rh_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rh -d rh"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  api:
+    build: .
+    environment:
+      DATABASE_URL: postgresql://rh:rh_local@db:5432/rh
+      NODE_ENV: development
+      HOST: 0.0.0.0
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: sh -c "npm run setup && npm start"
+volumes:
+  rh_db:
